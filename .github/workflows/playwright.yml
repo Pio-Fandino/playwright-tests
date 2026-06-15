@@ -6,6 +6,21 @@ on:
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:   # 👈 This adds the "Run workflow" button
+    inputs:
+      testSuite:
+        description: 'Choose which tests to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - login-all
+          - login-success
+          - login-failure
+          - login-failure-loop
+          - example
+          - homepage
+          - locators
 
 jobs:
   test:
@@ -27,8 +42,39 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright tests with HTML report
-        run: npx playwright test --reporter=html
+      - name: Run Playwright tests
+        run: |
+          if [ -n "${{ github.event.inputs.testName }}" ]; then
+            # Run a single test case by name
+            npx playwright test --reporter=html -g "${{ github.event.inputs.testName }}"
+          else
+            case "${{ github.event.inputs.testSuite }}" in
+              all)
+                npx playwright test --reporter=html
+                ;;
+              login-all)
+                npx playwright test tests/login/ --reporter=html
+                ;;
+              login-success)
+                npx playwright test tests/login/login-success.spec.ts --reporter=html
+                ;;
+              login-failure)
+                npx playwright test tests/login/login-failure.spec.ts --reporter=html
+                ;;
+              login-failure-loop)
+                npx playwright test tests/login/login-failure-loopt.spec.ts --reporter=html
+                ;;
+              example)
+                npx playwright test tests/example.spec.ts --reporter=html
+                ;;
+              homepage)
+                npx playwright test tests/homepage.spec.ts --reporter=html
+                ;;
+              locators)
+                npx playwright test tests/locators.spec.ts --reporter=html
+                ;;  
+            esac
+          fi
 
       - name: Upload Playwright HTML report
         uses: actions/upload-artifact@v4
